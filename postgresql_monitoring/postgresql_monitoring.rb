@@ -40,7 +40,7 @@ class PostgresqlMonitoring < Scout::Plugin
                                      sum(n_tup_upd) AS "rows_update",
                                      sum(n_tup_del) AS "rows_delete",
                                      (sum(idx_tup_fetch) + sum(seq_tup_read) + sum(n_tup_ins) + sum(n_tup_upd) + sum(n_tup_del)) AS "rows_total"
-                              FROM pg_stat_all_tables WHERE datname="' + option(:dbname) + '";')
+                              FROM pg_stat_all_tables;')
         row = result[0]
 
         row.each do |name, val|
@@ -57,7 +57,7 @@ class PostgresqlMonitoring < Scout::Plugin
                                      sum(xact_commit+xact_rollback) AS "xact_total",
                                      sum(blks_read) AS "blks_read",
                                      sum(blks_hit) AS "blks_hit"
-                              FROM pg_stat_database WHERE datname="' + option(:dbname) + '";')
+                              FROM pg_stat_database WHERE datname=\'' + option(:dbname) + '\';')
         row = result[0]
         row.each do |name, val|
           if NON_COUNTER_ENTRIES.include?(name)
