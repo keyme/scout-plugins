@@ -1,7 +1,7 @@
 class PostgresqlMonitoring < Scout::Plugin
   # need the ruby-pg gem
   needs 'pg'
-  
+
   OPTIONS=<<-EOS
     user:
       name: PostgreSQL username
@@ -27,20 +27,20 @@ class PostgresqlMonitoring < Scout::Plugin
   EOS
 
   NON_COUNTER_ENTRIES = ["numbackends"]
-  
+
   def build_report
     report = {}
-    
+
     begin
       PGconn.new(:host=>option(:host), :user=>option(:user), :password=>option(:password), :port=>option(:port).to_i, :dbname=>option(:dbname)) do |pgconn|
 
-        result = pgconn.exec('SELECT sum(idx_tup_fetch) AS "rows_select_idx", 
-                                     sum(seq_tup_read) AS "rows_select_scan", 
-                                     sum(n_tup_ins) AS "rows_insert", 
+        result = pgconn.exec('SELECT sum(idx_tup_fetch) AS "rows_select_idx",
+                                     sum(seq_tup_read) AS "rows_select_scan",
+                                     sum(n_tup_ins) AS "rows_insert",
                                      sum(n_tup_upd) AS "rows_update",
                                      sum(n_tup_del) AS "rows_delete",
                                      (sum(idx_tup_fetch) + sum(seq_tup_read) + sum(n_tup_ins) + sum(n_tup_upd) + sum(n_tup_del)) AS "rows_total"
-                              FROM pg_stat_all_tables;')
+                              FROM pg_stat_all_tables WHERE datname="' + option(:dbname) + '";')
         row = result[0]
 
         row.each do |name, val|
@@ -51,13 +51,13 @@ class PostgresqlMonitoring < Scout::Plugin
           end
         end
 
-        result = pgconn.exec('SELECT sum(numbackends) AS "numbackends", 
-                                     sum(xact_commit) AS "xact_commit", 
-                                     sum(xact_rollback) AS "xact_rollback", 
-                                     sum(xact_commit+xact_rollback) AS "xact_total", 
-                                     sum(blks_read) AS "blks_read", 
+        result = pgconn.exec('SELECT sum(numbackends) AS "numbackends",
+                                     sum(xact_commit) AS "xact_commit",
+                                     sum(xact_rollback) AS "xact_rollback",
+                                     sum(xact_commit+xact_rollback) AS "xact_total",
+                                     sum(blks_read) AS "blks_read",
                                      sum(blks_hit) AS "blks_hit"
-                              FROM pg_stat_database;')
+                              FROM pg_stat_database WHERE datname="' + option(:dbname) + '";')
         row = result[0]
         row.each do |name, val|
           if NON_COUNTER_ENTRIES.include?(name)
