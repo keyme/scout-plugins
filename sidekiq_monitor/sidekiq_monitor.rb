@@ -26,7 +26,7 @@ class SidekiqMonitor < Scout::Plugin
   queues:
     name: Queues
     notes: Comma separated list of queues to monitor (* for all).
-		default: *
+    default: *
   namespace:
     name: Namespace
     notes: Redis namespace used for Sidekiq keys
@@ -47,11 +47,17 @@ class SidekiqMonitor < Scout::Plugin
 
     begin
       stats = Sidekiq::Stats.new
+      workers = Sidekiq::Workers.new
 
       [:enqueued, :failed, :processed].each do |nsym|
-        report(nsym => stats.send(nsym))
-        counter("#{nsym}_per_minute".to_sym, stats.send(nsym), :per => :minute)
+        value = stats.send(nsym)
+        report(nsym => value)
+        counter("#{nsym}_per_minute".to_sym, value, :per => :minute)
       end
+
+      worker_size = workers.size
+      report(:busy_workers => worker_size)
+      counter(:busy_workers_per_minute, worker_size, :per => :minute)
 
       queues = option(:queues)
       queues = (queues=='*') ? '*' : queues.split(',')
@@ -63,7 +69,7 @@ class SidekiqMonitor < Scout::Plugin
     end
   rescue Exception => e
     return error( "Could not connect to Redis.",
-                  "#{e.message} \n\nMake certain you've specified the correct host and port, DB, username, and password, and that Redis is accepting connections." )
+                  "#{e.message} \n\n#{e.backtrace}\n\nMake certain you've specified the correct host and port, DB, username, and password, and that Redis is accepting connections." )
   end
 end
 
